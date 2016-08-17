@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+xmlns="http://www.mulesoft.org/schema/mule/core"
+xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+
+	
+
+    <spring:beans>
+    		<spring:bean id="methodEntryTest" class="entrypointresolvertest.TestComponent" scope="prototype" />
+		 	<spring:bean id="customEntryTest" class="entrypointresolvertest.CalcComponent" scope="prototype" />
+	</spring:beans>
+
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="Entry_Point_Resolver_Test">			 
+
+        <http:listener config-ref="HTTP_Listener_Configuration" path="Test" allowedMethods="POST" doc:name="HTTP"/>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <!-- <custom-transformer encoding="UTF-8" mimeType="application/json" class="entrypointresolvertest.TestTransformer" doc:name="Array Entry Transformer"/> -->
+        <!-- <set-payload value="#[new Object[]{15, 'Test2'}]" doc:name="Set Payload"></set-payload> -->
+
+        <!-- <custom-transformer class="entrypointresolvertest.TestTransformer" doc:name="Java"/> -->
+        <!-- <set-property propertyName="#[header:INBOUND:methodName]" value="#['TestMethod4']" doc:name="Property"/> -->
+        <!-- <message-properties-transformer doc:name="Message Properties" scope="invocation">
+            <add-message-property key="method" value="PropertyEntryPointMethod"/>
+        </message-properties-transformer> -->
+
+        <component doc:name="Entry Point Test Component">
+        	<!--  <entry-point-resolver-set> -->
+             	<!-- <method-entry-point-resolver>
+          			<include-entry-point method="MethodEntryPointMethod1"/>
+          			<include-entry-point method="MethodEntryPointMethod2"/>
+      			</method-entry-point-resolver> -->
+      			<!-- <no-arguments-entry-point-resolver  acceptVoidMethods="true" >
+      			  	<include-entry-point method="NoArgumentEntryPointMethod1"/>
+      			</no-arguments-entry-point-resolver> -->
+				<entry-point-resolver-set>
+					 <property-entry-point-resolver acceptVoidMethods="true" />
+				</entry-point-resolver-set>
+<!--      </entry-point-resolver-set>  -->
+        	<!-- <property-entry-point-resolver acceptVoidMethods="true" /> -->
+            <!-- <array-entry-point-resolver acceptVoidMethods="true"  enableDiscovery="true"/> -->
+            <!-- <reflection-entry-point-resolver acceptVoidMethods="true" >
+             	<exclude-entry-point method="MethodEntryPointMethod1"  />
+             	<exclude-entry-point method="MethodEntryPointMethod2" />
+             	<exclude-object-methods>
+             		MethodEntryPointMethod1,MethodEntryPointMethod2
+             	</exclude-object-methods>
+            </reflection-entry-point-resolver> -->
+            <spring-object bean="methodEntryTest"/>
+        </component>
+    </flow>
+    <flow name="Calculate_Flow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="Calc" allowedMethods="POST" doc:name="HTTP"/>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <custom-transformer class="entrypointresolvertest.CalcTransformer" doc:name="Json Translate"/>
+        <component doc:name="Caculate Component">
+        	 <custom-entry-point-resolver class="entrypointresolvertest.CustomEntryPointResolver"/>
+       		<spring-object bean="customEntryTest"/>
+        </component>
+        <logger message="#[&quot;The result is &quot; + message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
